@@ -1,0 +1,16 @@
+[[IgnoredVulns]]
+id = "GHSA-v6h2-p8h4-qcjw"
+reason = """
+ReDoS vulnerability in brace-expansion@2.0.1 (CVSS 3.1: Low severity).
+
+Complete dependency paths:
+1. Production: @docker/actions-toolkit -> @actions/artifact -> archiver -> readdir-glob -> minimatch@5.1.6 -> brace-expansion@2.0.1
+
+Usage analysis:
+- Production code path: src/main.ts:69,73 calls toolkit.buildxInstall.build()/download()
+
+Not exploitable because:
+- User inputs (version string, boolean flags) never become glob patterns
+- Glob patterns are hardcoded by archiver/jest/eslint libraries
+- No user-controlled input reaches the brace-expansion code
+"""
