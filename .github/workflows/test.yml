@@ -1,0 +1,27 @@
+name: test
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v6
+      -
+        name: Set up Docker Buildx
+        uses: ./
+      -
+        name: Test
+        uses: docker/bake-action@v6
+        with:
+          targets: test
