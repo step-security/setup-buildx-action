@@ -6,13 +6,9 @@ concurrency:
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 10 * * *'
   push:
     branches:
       - 'main'
-    tags:
-      - 'v*'
   pull_request:
 
 jobs:

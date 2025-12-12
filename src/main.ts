@@ -97,7 +97,6 @@ actionsToolkit.run(
     // if the default context has TLS data loaded and endpoint is not set, then
     // we create a temporary docker context only if driver is docker-container
     // https://github.com/docker/buildx/blob/b96ad59f64d40873e4959336d294b648bb3937fe/builder/builder.go#L489
-    // https://github.com/docker/setup-buildx-action/issues/105
     if (!standalone && inputs.driver == 'docker-container' && (await Docker.context()) == 'default' && inputs.endpoint.length == 0) {
       let defaultContextWithTLS: boolean = false;
       await core.group(`Inspecting default docker context`, async () => {

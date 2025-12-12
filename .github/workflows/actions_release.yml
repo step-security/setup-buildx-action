@@ -10,6 +10,11 @@ on:
         description: "Specify a script to run after audit fix"
         required: false
         default: "yarn build"  
+      yarn_version:
+        description: "Specify a yarn version"
+        required: false
+        type: string  
+        default: "4.9.2"
 
 permissions:
   contents: read
@@ -25,3 +30,4 @@ jobs:
     with:
       tag: "${{ github.event.inputs.tag }}"
       script: ${{ inputs.script || 'yarn build' }}
+      yarn_version: ${{ inputs.yarn_version || '4.9.2' }}
