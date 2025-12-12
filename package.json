@@ -28,7 +28,7 @@
     "@actions/core": "^1.11.1",
     "@docker/actions-toolkit": "^0.63.0",
     "axios": "^1.13.2",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
