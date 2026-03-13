@@ -1,3 +1,5 @@
+[![StepSecurity Maintained Action](https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png)](https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions)
+
 [![CI workflow](https://img.shields.io/github/actions/workflow/status/step-security/setup-buildx-action/ci.yml?branch=master&label=ci&logo=github&style=flat-square)](https://github.com/step-security/setup-buildx-action/actions?workflow=ci)
 [![Test workflow](https://img.shields.io/github/actions/workflow/status/step-security/setup-buildx-action/test.yml?branch=master&label=test&logo=github&style=flat-square)](https://github.com/step-security/setup-buildx-action/actions?workflow=test)
 
@@ -46,7 +48,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
       -
         name: Set up Docker Buildx
-        uses: step-security/setup-buildx-action@v3
+        uses: step-security/setup-buildx-action@v4
 ```
 
 ## Configuring your builder
