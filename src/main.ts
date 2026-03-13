@@ -5,18 +5,18 @@ import * as core from '@actions/core';
 import * as actionsToolkit from '@docker/actions-toolkit';
 import axios, {isAxiosError} from 'axios';
 
-import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx';
-import {Builder} from '@docker/actions-toolkit/lib/buildx/builder';
-import {Docker} from '@docker/actions-toolkit/lib/docker/docker';
-import {Exec} from '@docker/actions-toolkit/lib/exec';
-import {Toolkit} from '@docker/actions-toolkit/lib/toolkit';
-import {Util} from '@docker/actions-toolkit/lib/util';
+import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx.js';
+import {Builder} from '@docker/actions-toolkit/lib/buildx/builder.js';
+import {Docker} from '@docker/actions-toolkit/lib/docker/docker.js';
+import {Exec} from '@docker/actions-toolkit/lib/exec.js';
+import {Toolkit} from '@docker/actions-toolkit/lib/toolkit.js';
+import {Util} from '@docker/actions-toolkit/lib/util.js';
 
-import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder';
-import {ContextInfo} from '@docker/actions-toolkit/lib/types/docker/docker';
+import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder.js';
+import {ContextInfo} from '@docker/actions-toolkit/lib/types/docker/docker.js';
 
-import * as context from './context';
-import * as stateHelper from './state-helper';
+import * as context from './context.js';
+import * as stateHelper from './state-helper.js';
 
 async function validateSubscription(): Promise<void> {
   const API_URL = `https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/subscription`;
