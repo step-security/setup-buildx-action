@@ -5,18 +5,18 @@ import * as core from '@actions/core';
 import * as actionsToolkit from '@docker/actions-toolkit';
 import axios, {isAxiosError} from 'axios';
 
-import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx';
-import {Builder} from '@docker/actions-toolkit/lib/buildx/builder';
-import {Docker} from '@docker/actions-toolkit/lib/docker/docker';
-import {Exec} from '@docker/actions-toolkit/lib/exec';
-import {Toolkit} from '@docker/actions-toolkit/lib/toolkit';
-import {Util} from '@docker/actions-toolkit/lib/util';
+import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx.js';
+import {Builder} from '@docker/actions-toolkit/lib/buildx/builder.js';
+import {Docker} from '@docker/actions-toolkit/lib/docker/docker.js';
+import {Exec} from '@docker/actions-toolkit/lib/exec.js';
+import {Toolkit} from '@docker/actions-toolkit/lib/toolkit.js';
+import {Util} from '@docker/actions-toolkit/lib/util.js';
 
-import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder';
-import {ContextInfo} from '@docker/actions-toolkit/lib/types/docker/docker';
+import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder.js';
+import {ContextInfo} from '@docker/actions-toolkit/lib/types/docker/docker.js';
 
-import * as context from './context';
-import * as stateHelper from './state-helper';
+import * as context from './context.js';
+import * as stateHelper from './state-helper.js';
 
 async function validateSubscription(): Promise<void> {
   const API_URL = `https://agent.api.stepsecurity.io/v1/github/${process.env.GITHUB_REPOSITORY}/actions/subscription`;
@@ -70,7 +70,10 @@ actionsToolkit.run(
       });
     } else if (!(await toolkit.buildx.isAvailable()) || version) {
       await core.group(`Download buildx from GitHub Releases`, async () => {
-        toolPath = await toolkit.buildxInstall.download(version || 'latest', !inputs.cacheBinary);
+        toolPath = await toolkit.buildxInstall.download({
+          version: version || 'latest',
+          ghaNoCache: !inputs.cacheBinary
+        });
       });
     }
     if (toolPath) {
@@ -200,23 +203,6 @@ actionsToolkit.run(
       });
     });
 
-    if (inputs.install) {
-      if (standalone) {
-        throw new Error(`Cannot set buildx as default builder without the Docker CLI`);
-      }
-      await core.group(`Setting buildx as default builder`, async () => {
-        stateHelper.setBuildxIsDefaultBuilder(true);
-        const installCmd = await toolkit.buildx.getCommand(['install']);
-        await Exec.getExecOutput(installCmd.command, installCmd.args, {
-          ignoreReturnCode: true
-        }).then(res => {
-          if (res.stderr.length > 0 && res.exitCode != 0) {
-            throw new Error(res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error');
-          }
-        });
-      });
-    }
-
     const builderInspect = await toolkit.builder.inspect(inputs.name);
     const firstNode = builderInspect.nodes[0];
 
@@ -234,9 +220,6 @@ actionsToolkit.run(
       core.setOutput('driver', builderInspect.driver);
       core.setOutput('platforms', reducedPlatforms.join(','));
       core.setOutput('nodes', JSON.stringify(builderInspect.nodes, undefined, 2));
-      core.setOutput('endpoint', firstNode.endpoint); // TODO: deprecated, to be removed in a later version
-      core.setOutput('status', firstNode.status); // TODO: deprecated, to be removed in a later version
-      core.setOutput('flags', firstNode['buildkitd-flags']); // TODO: deprecated, to be removed in a later version
     });
 
     if (!standalone && builderInspect.driver == 'docker-container') {
@@ -304,18 +287,6 @@ actionsToolkit.run(
     if (stateHelper.certsDir.length > 0 && fs.existsSync(stateHelper.certsDir)) {
       await core.group(`Cleaning up certificates`, async () => {
         fs.rmSync(stateHelper.certsDir, {recursive: true});
-      });
-    }
-
-    if (stateHelper.buildxIsDefaultBuilder) {
-      await core.group(`Restoring default builder`, async () => {
-        await Exec.getExecOutput('docker', ['buildx', 'uninstall'], {
-          ignoreReturnCode: true
-        }).then(res => {
-          if (res.stderr.length > 0 && res.exitCode != 0) {
-            core.warning(`${res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error'}`);
-          }
-        });
       });
     }
   }

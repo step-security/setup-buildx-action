@@ -1,38 +1,40 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals';
+import {beforeEach, describe, expect, test, vi} from 'vitest';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
-import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx';
-import {Context} from '@docker/actions-toolkit/lib/context';
-import {Docker} from '@docker/actions-toolkit/lib/docker/docker';
-import {Toolkit} from '@docker/actions-toolkit/lib/toolkit';
-import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder';
 
-import * as context from '../src/context';
+import {Buildx} from '@docker/actions-toolkit/lib/buildx/buildx.js';
+import {Context} from '@docker/actions-toolkit/lib/context.js';
+import {Docker} from '@docker/actions-toolkit/lib/docker/docker.js';
+import {Toolkit} from '@docker/actions-toolkit/lib/toolkit.js';
+
+import {Node} from '@docker/actions-toolkit/lib/types/buildx/builder.js';
+
+import * as context from '../src/context.js';
 
 const fixturesDir = path.join(__dirname, 'fixtures');
-// prettier-ignore
-const tmpDir = path.join(process.env.TEMP || '/tmp', 'setup-buildx-jest');
-const tmpName = path.join(tmpDir, '.tmpname-jest');
+const tmpDir = fs.mkdtempSync(path.join(process.env.TEMP || os.tmpdir(), 'context-'));
+const tmpName = path.join(tmpDir, '.tmpname-vi');
 
-jest.spyOn(Context, 'tmpDir').mockImplementation((): string => {
+vi.spyOn(Context, 'tmpDir').mockImplementation((): string => {
   if (!fs.existsSync(tmpDir)) {
     fs.mkdirSync(tmpDir, {recursive: true});
   }
   return tmpDir;
 });
 
-jest.spyOn(Context, 'tmpName').mockImplementation((): string => {
+vi.spyOn(Context, 'tmpName').mockImplementation((): string => {
   return tmpName;
 });
 
-jest.mock('crypto', () => {
+vi.mock('crypto', async () => {
   return {
-    ...(jest.requireActual('crypto') as object),
-    randomUUID: jest.fn(() => '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d')
+    ...(await vi.importActual('crypto')),
+    randomUUID: vi.fn(() => '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d')
   };
 });
 
-jest.spyOn(Docker, 'context').mockImplementation((): Promise<string> => {
+vi.spyOn(Docker, 'context').mockImplementation((): Promise<string> => {
   return Promise.resolve('default');
 });
 
@@ -52,7 +54,6 @@ describe('getCreateArgs', () => {
       0,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -71,7 +72,6 @@ describe('getCreateArgs', () => {
       'v0.10.3',
       new Map<string, string>([
         ['driver', 'docker'],
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -89,7 +89,6 @@ describe('getCreateArgs', () => {
       2,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['driver-opts', 'image=moby/buildkit:master\nnetwork=host'],
         ['cache-binary', 'true'],
@@ -111,7 +110,6 @@ describe('getCreateArgs', () => {
       new Map<string, string>([
         ['driver', 'remote'],
         ['endpoint', 'tls://foo:1234'],
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -132,7 +130,6 @@ describe('getCreateArgs', () => {
         ['driver', 'remote'],
         ['platforms', 'linux/arm64,linux/arm/v7'],
         ['endpoint', 'tls://foo:1234'],
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -151,7 +148,6 @@ describe('getCreateArgs', () => {
       5,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['driver-opts', `"env.no_proxy=localhost,127.0.0.1,.mydomain"`],
         ['cache-binary', 'true'],
@@ -170,7 +166,6 @@ describe('getCreateArgs', () => {
       6,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['platforms', 'linux/amd64\n"linux/arm64,linux/arm/v7"'],
         ['cache-binary', 'true'],
@@ -189,7 +184,6 @@ describe('getCreateArgs', () => {
       7,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['driver', 'unknown'],
         ['cache-binary', 'true'],
@@ -206,7 +200,6 @@ describe('getCreateArgs', () => {
       8,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['buildkitd-config', path.join(fixturesDir, 'buildkitd.toml')],
         ['cache-binary', 'true'],
@@ -225,7 +218,6 @@ describe('getCreateArgs', () => {
       9,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['buildkitd-config-inline', 'debug = true'],
         ['cache-binary', 'true'],
@@ -244,7 +236,6 @@ describe('getCreateArgs', () => {
       10,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'false'],
         ['driver', 'cloud'],
         ['buildkitd-flags', '--allow-insecure-entitlement network.host'],
@@ -263,7 +254,6 @@ describe('getCreateArgs', () => {
       11,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'true'],
         ['cleanup', 'true'],
         ['cache-binary', 'true'],
@@ -282,7 +272,6 @@ describe('getCreateArgs', () => {
       12,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'true'],
         ['cleanup', 'true'],
         ['cache-binary', 'true'],
@@ -298,13 +287,13 @@ describe('getCreateArgs', () => {
       ]
     ],
   ])(
-    '[%d] given buildx %s and %p as inputs, returns %p',
+    '[%d] given buildx %o and %o as inputs, returns %o',
     async (num: number, buildxVersion: string, inputs: Map<string, string>, expected: Array<string>) => {
       inputs.forEach((value: string, name: string) => {
         setInput(name, value);
       });
       const toolkit = new Toolkit();
-      jest.spyOn(Buildx.prototype, 'version').mockImplementation(async (): Promise<string> => {
+      vi.spyOn(Buildx.prototype, 'version').mockImplementation(async (): Promise<string> => {
         return buildxVersion;
       });
       const inp = await context.getInputs();
@@ -330,7 +319,6 @@ describe('getAppendArgs', () => {
       0,
       'v0.10.3',
       new Map<string, string>([
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -357,13 +345,13 @@ describe('getAppendArgs', () => {
       ]
     ]
   ])(
-    '[%d] given buildx %s and %p as inputs, returns %p',
+    '[%d] given buildx %o and %o as inputs, returns %o',
     async (num: number, buildxVersion: string, inputs: Map<string, string>, node: Node, expected: Array<string>) => {
       inputs.forEach((value: string, name: string) => {
         setInput(name, value);
       });
       const toolkit = new Toolkit();
-      jest.spyOn(Buildx.prototype, 'version').mockImplementation(async (): Promise<string> => {
+      vi.spyOn(Buildx.prototype, 'version').mockImplementation(async (): Promise<string> => {
         return buildxVersion;
       });
       const inp = await context.getInputs();
@@ -389,7 +377,6 @@ describe('getVersion', () => {
       0,
       new Map<string, string>([
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -402,7 +389,6 @@ describe('getVersion', () => {
       new Map<string, string>([
         ['version', 'latest'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -415,7 +401,6 @@ describe('getVersion', () => {
       new Map<string, string>([
         ['version', 'edge'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -428,7 +413,6 @@ describe('getVersion', () => {
       new Map<string, string>([
         ['version', 'v0.19.2'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -442,7 +426,6 @@ describe('getVersion', () => {
         ['version', 'latest'],
         ['driver', 'cloud'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -456,7 +439,6 @@ describe('getVersion', () => {
         ['version', 'edge'],
         ['driver', 'cloud'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -469,7 +451,6 @@ describe('getVersion', () => {
       new Map<string, string>([
         ['driver', 'cloud'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -483,7 +464,6 @@ describe('getVersion', () => {
         ['version', 'cloud:v0.11.2-desktop.2'],
         ['driver', 'cloud'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -496,7 +476,6 @@ describe('getVersion', () => {
       new Map<string, string>([
         ['version', 'cloud:v0.11.2-desktop.2'],
         // defaults
-        ['install', 'false'],
         ['use', 'true'],
         ['cache-binary', 'true'],
         ['cleanup', 'true'],
@@ -505,7 +484,7 @@ describe('getVersion', () => {
       'cloud:v0.11.2-desktop.2'
     ],
   ])(
-    '[%d] given %p as inputs, returns version %p',
+    '[%d] given %o as inputs, returns version %o',
     async (num: number, inputs: Map<string, string>, expected: string) => {
       inputs.forEach((value: string, name: string) => {
         setInput(name, value);
