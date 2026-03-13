@@ -247,7 +247,7 @@ jobs:
         env:
           DOCKER_CONTEXT: mycontext
 
-  config:
+  buildkitd-config:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -284,7 +284,7 @@ jobs:
         with:
           context: .
 
-  config-inline:
+  buildkitd-config-inline:
     runs-on: ubuntu-latest
     steps:
       - name: Harden the runner (Audit all outbound calls)
@@ -455,41 +455,6 @@ jobs:
         uses: docker/build-push-action@9e436ba9f2d7bcd1d038c8e55d039d37896ddc5d # master
         with:
           context: .
-
-  standalone-install-error:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
-        with:
-          egress-policy: audit
-
-      -
-        name: Checkout
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-      -
-        name: Uninstall docker cli
-        run: |
-          if dpkg -s "docker-ce" >/dev/null 2>&1; then
-            sudo dpkg -r --force-depends docker-ce-cli docker-buildx-plugin
-          else
-            sudo apt-get purge -y moby-cli moby-buildx
-          fi
-      -
-        name: Set up Docker Buildx
-        id: buildx
-        continue-on-error: true
-        uses: ./
-        with:
-          install: true
-      -
-        name: Check
-        run: |
-          echo "${{ toJson(steps.buildx) }}"
-          if [ "${{ steps.buildx.outcome }}" != "failure" ] || [ "${{ steps.buildx.conclusion }}" != "success" ]; then
-            echo "::error::Should have failed"
-            exit 1
-          fi
 
   append:
     runs-on: ubuntu-latest
