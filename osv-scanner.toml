@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "GHSA-v2v4-37r5-5v8g"
+reason = "XSS in ip-address (group/link/spanAll methods) requires rendering HTML output. Used only transitively via socks for address parsing — no HTML rendering path is reachable."
