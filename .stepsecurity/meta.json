@@ -1,0 +1,18 @@
+{
+   "schema_version": "1",
+   "onboarding_type": "copied",
+   "archived": false,
+   "maintained_action_name": "step-security/setup-buildx-action",
+   "upstream_full_repo_name": "docker/setup-buildx-action",
+   "action_type": "node",
+   "last_release": {
+     "tag_name": "v4.1.0",
+     "created_at": "2026-06-11T12:05:24Z",
+     "published_at": "2026-06-12T04:32:18Z"
+   },
+   "sync": {
+     "ignore_presets": [
+       "defaults_v1"
+     ]
+   }
+ }
