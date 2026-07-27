@@ -1,0 +1,3 @@
+[[IgnoredVulns]]
+id = "GHSA-mh99-v99m-4gvg"
+reason = "brace-expansion ReDoS/OOM affects versions 1.1.16 and 2.1.2 (transitive via minimatch, pulled in by @actions/artifact and @actions/glob). Exploitation requires an attacker to control the glob pattern string passed to brace-expansion. In the GitHub Actions runner context, any such attacker already has full control of the runner environment, making this unexploitable in practice. The fix requires upgrading to brace-expansion@5.x, which is a breaking major version change incompatible with the semver ranges used by the transitive dependents."
