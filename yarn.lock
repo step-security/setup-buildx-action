@@ -1471,13 +1471,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/js-yaml@npm:^4.0.9":
-  version: 4.0.9
-  resolution: "@types/js-yaml@npm:4.0.9"
-  checksum: 10/a0ce595db8a987904badd21fc50f9f444cb73069f4b95a76cc222e0a17b3ff180669059c763ec314bc4c3ce284379177a9da80e83c5f650c6c1310cafbfaa8e6
-  languageName: node
-  linkType: hard
-
 "@types/json-schema@npm:^7.0.15":
   version: 7.0.15
   resolution: "@types/json-schema@npm:7.0.15"
@@ -2514,7 +2507,6 @@ __metadata:
     "@actions/github": "npm:^9.0.0"
     "@docker/actions-toolkit": "npm:^0.92.0"
     "@eslint/js": "npm:^9.39.3"
-    "@types/js-yaml": "npm:^4.0.9"
     "@types/node": "npm:^24.11.0"
     "@typescript-eslint/eslint-plugin": "npm:^8.56.1"
     "@typescript-eslint/parser": "npm:^8.56.1"
@@ -2527,7 +2519,6 @@ __metadata:
     eslint-plugin-prettier: "npm:^5.5.5"
     generate-license-file: "npm:^4.1.1"
     globals: "npm:^17.3.0"
-    js-yaml: "npm:^5.2.0"
     prettier: "npm:^3.8.1"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.18"
@@ -3616,13 +3607,13 @@ __metadata:
   linkType: hard
 
 "js-yaml@npm:^5.2.0":
-  version: 5.2.2
-  resolution: "js-yaml@npm:5.2.2"
+  version: 5.3.0
+  resolution: "js-yaml@npm:5.3.0"
   dependencies:
     argparse: "npm:^2.0.1"
   bin:
     js-yaml: bin/js-yaml.mjs
-  checksum: 10/2b4c2933af12c97e1c4894a4f27fe9b06dab70a64a96bb50624b4429bef6bf11008bde20d868bce52a36784473314efc30078ba6025b58cf7537961e23b1ae9c
+  checksum: 10/6c7e8ea8dd5643d9df73f4aa796f3572537284e9b819b74ef919467452bfa4624f8f7477cfc775c91db7e2f32387133b1b6c4e95aef9702be6bb042ae554884a
   languageName: node
   linkType: hard
 
