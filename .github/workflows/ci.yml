@@ -1,5 +1,8 @@
 name: ci
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -95,7 +98,7 @@ jobs:
       -
         name: Dump context
         if: always()
-        uses: crazy-max/ghaction-dump-context@5355a8e5e6ac5a302e746a1c4b7747a0393863c8 # v2.3.0
+        uses: crazy-max/ghaction-dump-context@4d9eeaf15dd59aa4346919ea84a84ccf514b4db8 # v3.1.0
 
   debug:
     runs-on: ubuntu-latest
@@ -209,9 +212,18 @@ jobs:
 
   endpoint:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        endpoint:
+          - mycontext
+          - tcp://127.0.0.1:2375
+    env:
+      # only the explicit endpoint should provide access to a daemon.
+      DOCKER_HOST: unix:///tmp/nonexistent-docker.sock
     services:
       dind:
-        image: docker:dind
+        image: docker:29.3-dind@sha256:4d90f1f6c400315c2dba96d3ec93c01e64198395cbba04f79d12adce4f737029
         options: >-
           --privileged
           --health-cmd "docker info"
@@ -241,11 +253,19 @@ jobs:
           docker --context mycontext info
       -
         name: Set up Docker Buildx
+        id: buildx
         uses: ./
         with:
-          endpoint: mycontext
+          endpoint: ${{ matrix.endpoint }}
+      -
+        name: Build
         env:
-          DOCKER_CONTEXT: mycontext
+          BUILDER: ${{ steps.buildx.outputs.name }}
+        run: |
+          docker buildx build --builder "$BUILDER" - <<'EOF'
+          FROM scratch
+          LABEL test=endpoint
+          EOF
 
   buildkitd-config:
     runs-on: ubuntu-latest
@@ -575,9 +595,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       -
         name: Install k3s
-        uses: crazy-max/.github/.github/actions/install-k3s@a94383ec9e125b23907fb6fcebf7ff87964595e5
-        with:
-          version: 'v1.34.2+k3s1'
+        uses: crazy-max/.github/.github/actions/install-k3s@f91220cba053bd54299ba645a599ee8ed436f222 # v1.11.0
       -
         name: Set up Docker Buildx
         id: buildx
