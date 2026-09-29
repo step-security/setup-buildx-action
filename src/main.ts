@@ -55,7 +55,6 @@ actionsToolkit.run(
     await validateSubscription();
     const inputs: context.Inputs = await context.getInputs();
     stateHelper.setCleanup(inputs.cleanup);
-    const version = context.getVersion(inputs);
 
     const toolkit = new Toolkit();
     const standalone = await toolkit.buildx.isStandalone();
@@ -77,17 +76,17 @@ actionsToolkit.run(
     });
 
     let toolPath;
-    if (Util.isValidRef(version)) {
+    if (Util.isValidRef(inputs.version)) {
       if (standalone) {
         throw new Error(`Cannot build from source without the Docker CLI`);
       }
       await core.group(`Build buildx from source`, async () => {
-        toolPath = await toolkit.buildxInstall.build(version, !inputs.cacheBinary);
+        toolPath = await toolkit.buildxInstall.build(inputs.version, !inputs.cacheBinary);
       });
-    } else if (!(await toolkit.buildx.isAvailable()) || version) {
+    } else if (!(await toolkit.buildx.isAvailable()) || inputs.version || (inputs.driver === 'cloud' && !inputs.version && !(await toolkit.buildx.versionSatisfies('>=0.37.0-0')))) {
       await core.group(`Download buildx from GitHub Releases`, async () => {
         toolPath = await toolkit.buildxInstall.download({
-          version: version || 'latest',
+          version: inputs.version || 'latest',
           ghaNoCache: !inputs.cacheBinary
         });
       });
@@ -123,8 +122,8 @@ actionsToolkit.run(
           ignoreReturnCode: true,
           silent: true
         }).then(res => {
-          if (res.stderr.length > 0 && res.exitCode != 0) {
-            core.info(`Cannot inspect default docker context: ${res.stderr.trim()}`);
+          if (res.exitCode != 0) {
+            core.info(`Cannot inspect default docker context: ${Docker.getErrorMessage(res.stderr)}`);
           } else {
             try {
               const contextInfo = (<Array<ContextInfo>>JSON.parse(res.stdout.trim()))[0];
@@ -145,8 +144,8 @@ actionsToolkit.run(
           await Docker.getExecOutput(['context', 'create', tmpDockerContext], {
             ignoreReturnCode: true
           }).then(res => {
-            if (res.stderr.length > 0 && res.exitCode != 0) {
-              core.warning(`Cannot create docker context ${tmpDockerContext}: ${res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error'}`);
+            if (res.exitCode != 0) {
+              core.warning(`Cannot create docker context ${tmpDockerContext}: ${Docker.getErrorMessage(res.stderr)}`);
             } else {
               core.info(`Setting builder endpoint to ${tmpDockerContext} context`);
               inputs.endpoint = tmpDockerContext;
@@ -157,9 +156,35 @@ actionsToolkit.run(
       }
     }
 
+    let builderExists = false;
+    if (inputs.driver !== 'docker') {
+      builderExists = await toolkit.builder.exists(inputs.name);
+    }
+
+    const appendNodes = inputs.append ? (yaml.load(inputs.append) as Node[]) : [];
+
+    if (!standalone && inputs.driver == 'docker-container') {
+      const buildkitImages = new Set<string>();
+      if (!builderExists && !inputs.endpoint) {
+        buildkitImages.add(resolveBuildKitImage(inputs.driverOpts));
+      }
+      for (const node of appendNodes) {
+        if (!node.endpoint) {
+          buildkitImages.add(resolveBuildKitImage(node['driver-opts']));
+        }
+      }
+      if (buildkitImages.size > 0) {
+        await core.group(`Pulling BuildKit image(s)`, async () => {
+          for (const image of buildkitImages) {
+            await Docker.pull(image);
+          }
+        });
+      }
+    }
+
     if (inputs.driver !== 'docker') {
       await core.group(`Creating a new builder instance`, async () => {
-        if (await toolkit.builder.exists(inputs.name)) {
+        if (builderExists) {
           core.info(`Builder ${inputs.name} already exists, skipping creation`);
         } else {
           const certsDriverOpts = Buildx.resolveCertsDriverOpts(inputs.driver, inputs.endpoint, {
@@ -174,19 +199,18 @@ actionsToolkit.run(
           await Exec.getExecOutput(createCmd.command, createCmd.args, {
             ignoreReturnCode: true
           }).then(res => {
-            if (res.stderr.length > 0 && res.exitCode != 0) {
-              throw new Error(res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error');
+            if (res.exitCode != 0) {
+              throw new Error(`Failed to create builder ${inputs.name}: ${Buildx.getErrorMessage(res.stderr)}`);
             }
           });
         }
       });
     }
 
-    if (inputs.append) {
+    if (appendNodes.length > 0) {
       await core.group(`Appending node(s) to builder`, async () => {
         let nodeIndex = 1;
-        const nodes = yaml.load(inputs.append) as Node[];
-        for (const node of nodes) {
+        for (const node of appendNodes) {
           const certsDriverOpts = Buildx.resolveCertsDriverOpts(inputs.driver, `${node.endpoint}`, {
             cacert: process.env[`${context.builderNodeEnvPrefix}_${nodeIndex}_AUTH_TLS_CACERT`],
             cert: process.env[`${context.builderNodeEnvPrefix}_${nodeIndex}_AUTH_TLS_CERT`],
@@ -199,8 +223,8 @@ actionsToolkit.run(
           await Exec.getExecOutput(appendCmd.command, appendCmd.args, {
             ignoreReturnCode: true
           }).then(res => {
-            if (res.stderr.length > 0 && res.exitCode != 0) {
-              throw new Error(`Failed to append node ${node.name}: ${res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error'}`);
+            if (res.exitCode != 0) {
+              throw new Error(`Failed to append node ${node.name}: ${Buildx.getErrorMessage(res.stderr)}`);
             }
           });
           nodeIndex++;
@@ -213,8 +237,8 @@ actionsToolkit.run(
       await Exec.getExecOutput(inspectCmd.command, inspectCmd.args, {
         ignoreReturnCode: true
       }).then(res => {
-        if (res.stderr.length > 0 && res.exitCode != 0) {
-          throw new Error(res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error');
+        if (res.exitCode != 0) {
+          throw new Error(`Failed to boot builder: ${Buildx.getErrorMessage(res.stderr)}`);
         }
       });
     });
@@ -258,8 +282,8 @@ actionsToolkit.run(
         await Docker.getExecOutput(['logs', `${stateHelper.containerName}`], {
           ignoreReturnCode: true
         }).then(res => {
-          if (res.stderr.length > 0 && res.exitCode != 0) {
-            core.warning(res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error');
+          if (res.exitCode != 0) {
+            core.warning(`Failed to display BuildKit logs: ${Docker.getErrorMessage(res.stderr)}`);
           }
         });
       });
@@ -278,8 +302,8 @@ actionsToolkit.run(
           await Exec.getExecOutput(rmCmd.command, rmCmd.args, {
             ignoreReturnCode: true
           }).then(res => {
-            if (res.stderr.length > 0 && res.exitCode != 0) {
-              core.warning(res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error');
+            if (res.exitCode != 0) {
+              core.warning(`Failed to remove builder ${stateHelper.builderName}: ${Buildx.getErrorMessage(res.stderr)}`);
             }
           });
         } else {
@@ -293,8 +317,8 @@ actionsToolkit.run(
         await Exec.getExecOutput('docker', ['context', 'rm', '-f', stateHelper.tmpDockerContext], {
           ignoreReturnCode: true
         }).then(res => {
-          if (res.stderr.length > 0 && res.exitCode != 0) {
-            core.warning(`${res.stderr.match(/(.*)\s*$/)?.[0]?.trim() ?? 'unknown error'}`);
+          if (res.exitCode != 0) {
+            core.warning(`Failed to remove temp docker context ${stateHelper.tmpDockerContext}: ${Docker.getErrorMessage(res.stderr)}`);
           }
         });
       });
@@ -307,3 +331,12 @@ actionsToolkit.run(
     }
   }
 );
+
+function resolveBuildKitImage(driverOpts: string[] = []): string {
+  return (
+    driverOpts
+      .find(driverOpt => driverOpt.trim().startsWith('image='))
+      ?.trim()
+      .substring('image='.length) || 'moby/buildkit:buildx-stable-1'
+  );
+}
